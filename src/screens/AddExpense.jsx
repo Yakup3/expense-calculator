@@ -45,7 +45,7 @@ export default function AddExpense() {
       const expenseData = {
         name: nameInputValue,
         expenseData: expenseInputValue.replace(/\s+/g, ' ').trim(),
-        expense: res,
+        expense: res.toFixed(2),
       };
 
       let expenseValue;

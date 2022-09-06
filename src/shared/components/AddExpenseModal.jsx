@@ -1,26 +1,34 @@
 import React, {useState} from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
   TouchableOpacity,
+  Text,
+  SafeAreaView,
+  StyleSheet,
+  View,
+  TextInput,
   Alert,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
-
+import {Modalize} from 'react-native-modalize';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-import {localStrings} from '../shared/localization';
-import {TEMPEXPENSE} from '../shared/constants';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function AddExpense() {
-  const navigation = useNavigation();
+import {localStrings} from '../localization';
+
+export default function AddExpenseModal({modalizeRef, onAdd}) {
   const [nameInputValue, setNameInputValue] = useState('');
   const [expenseInputValue, setExpenseInputValue] = useState('');
 
   const onClose = () => {
-    navigation.goBack();
+    setNameInputValue('');
+    setExpenseInputValue('');
+    modalizeRef?.current?.close();
+  };
+
+  const handleOnNameInputChangeText = text => {
+    setNameInputValue(text);
+  };
+
+  const handleOnExpenseInputChangeText = text => {
+    setExpenseInputValue(text);
   };
 
   const calculateExpense = expense => {
@@ -34,8 +42,12 @@ export default function AddExpense() {
     return result;
   };
 
-  const handleOnAddButton = async () => {
-    if (nameInputValue.length == 0 && expenseInputValue.length == 0) {
+  const requiredAlert = () => {
+    return Alert.alert(localStrings.warning, localStrings.fillDataWarning);
+  };
+
+  const handleOnAddButton = () => {
+    if (nameInputValue.length == 0 || expenseInputValue.length == 0) {
       requiredAlert();
     } else {
       const res = calculateExpense(
@@ -48,52 +60,14 @@ export default function AddExpense() {
         expense: res.toFixed(2),
       };
 
-      let expenseValue;
-      await AsyncStorage.getItem(TEMPEXPENSE).then(val => {
-        expenseValue = JSON.parse(val);
-      });
-
-      expenseValue =
-        expenseValue == null ? [expenseData] : expenseValue.concat(expenseData);
-      await AsyncStorage.setItem(TEMPEXPENSE, JSON.stringify(expenseValue));
-
-      setNameInputValue('');
-      setExpenseInputValue('');
-
-      Alert.alert(
-        // ? Title
-        localStrings.expenseAdded,
-        // ? Body
-        localStrings.wantToAddMoreExpense,
-        [
-          {
-            text: localStrings.yes,
-            onPress: async () => {},
-          },
-          {
-            text: 'leave',
-            onPress: () => {
-              navigation.goBack();
-            },
-            style: 'cancel',
-          },
-        ],
-        {cancelable: true},
-      );
+      onAdd(expenseData);
+      onClose();
     }
   };
 
-  const handleOnNameInputChangeText = text => {
-    setNameInputValue(text);
-  };
-
-  const handleOnExpenseInputChangeText = text => {
-    setExpenseInputValue(text);
-  };
-
-  const requiredAlert = () => {
-    return Alert.alert(localStrings.warning, localStrings.fillDataWarning);
-  };
+  /* -------------------------------------------------------------------------- */
+  /*                               Render Methods                               */
+  /* -------------------------------------------------------------------------- */
 
   const renderHeaderTitle = () => {
     return <Text style={styles.headerTitle}>{localStrings.addExpense}</Text>;
@@ -155,6 +129,10 @@ export default function AddExpense() {
     );
   };
 
+  const renderBody = () => {
+    return <View style={styles.body}>{renderInputContainer()}</View>;
+  };
+
   const renderAddButton = () => {
     return (
       <TouchableOpacity style={styles.addButton} onPress={handleOnAddButton}>
@@ -163,45 +141,41 @@ export default function AddExpense() {
     );
   };
 
-  const renderBody = () => {
-    return <View style={styles.body}>{renderInputContainer()}</View>;
+  const renderContent = () => {
+    return (
+      <SafeAreaView style={styles.content}>
+        {renderHeader()}
+        {renderBody()}
+        {renderAddButton()}
+      </SafeAreaView>
+    );
   };
 
   return (
-    <View style={styles.container}>
-      {renderHeader()}
-      {renderBody()}
-      {renderAddButton()}
-    </View>
+    <Modalize ref={modalizeRef} adjustToContentHeight withReactModal>
+      {renderContent()}
+    </Modalize>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-
-  textInput: {
-    backgroundColor: '#f2f2f2',
-    height: '35%',
-    paddingVertical: 0,
-    paddingHorizontal: '4%',
-    fontSize: 16,
-    color: '#000',
-    borderWidth: 1,
-    borderRadius: 10,
-    borderColor: '#696969',
-    marginBottom: '10%',
-  },
-  body: {
-    flex: 0.8,
-    padding: '9%',
+  content: {
+    paddingTop: 16,
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingBottom: 16,
+    zIndex: -10,
   },
   header: {
     flex: 0.15,
     paddingHorizontal: '7%',
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  body: {
+    flex: 0.8,
+    padding: '9%',
+    marginBottom: 20,
   },
   headerTitle: {
     paddingTop: '6%',
@@ -215,10 +189,22 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#000',
   },
+  textInput: {
+    backgroundColor: '#f2f2f2',
+    height: '35%',
+    paddingVertical: 0,
+    paddingHorizontal: '4%',
+    fontSize: 16,
+    color: '#000',
+    borderWidth: 1,
+    borderRadius: 10,
+    borderColor: '#696969',
+    marginBottom: '10%',
+  },
   addButton: {
     position: 'absolute',
-    width: '80%',
-    height: '5.5%',
+    width: '82%',
+    height: '14.5%',
     borderRadius: 15,
     bottom: '2%',
     alignSelf: 'center',

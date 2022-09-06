@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -17,31 +17,18 @@ import {
   PAGES,
   ScreenHeight,
   ScreenWidth,
-  TEMPEXPENSE,
 } from '../shared/constants';
 import {localStrings} from '../shared/localization';
 import ExpenseCard from '../shared/components/ExpenseCard';
+import AddExpenseModal from '../shared/components/AddExpenseModal';
 
 export default function Home() {
+  const addExpenseModalRef = React.createRef();
   const navigation = useNavigation();
   const [expenses, setExpenses] = useState([]);
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', async () => {
-      await getTempExpense();
-    });
-
-    return unsubscribe;
-  }, [navigation]);
-
-  const getTempExpense = async () => {
-    await AsyncStorage.getItem(TEMPEXPENSE).then(val => {
-      setExpenses(JSON.parse(val) || []);
-    });
-  };
-
   const handleOnPlusButton = () => {
-    navigation.navigate(PAGES.ADDEXPENSE);
+    addExpenseModalRef?.current?.open();
   };
 
   const getCurrentDate = () => {
@@ -49,17 +36,17 @@ export default function Home() {
     return now;
   };
 
-  const setData = () => {
+  const setCalculationsData = () => {
     let total = 0;
     expenses.forEach(n => {
-      total += n.expense;
+      total += parseFloat(n.expense);
     });
 
     const avg = total / expenses.length;
     const data = {
       id: new Date(),
-      total: total,
-      average: avg.toFixed(1),
+      total: total.toFixed(2),
+      average: avg.toFixed(2),
       date: getCurrentDate(),
       data: expenses,
     };
@@ -69,7 +56,7 @@ export default function Home() {
 
   const handleOnCalculateButton = async () => {
     if (expenses.length !== 0) {
-      const data = setData();
+      const data = setCalculationsData();
       let calculations;
 
       await AsyncStorage.getItem(CALCULATIONS).then(val => {
@@ -77,10 +64,9 @@ export default function Home() {
       });
 
       calculations = calculations == null ? [data] : calculations.concat(data);
-
       await AsyncStorage.setItem(CALCULATIONS, JSON.stringify(calculations));
+
       setExpenses([]);
-      await AsyncStorage.removeItem(TEMPEXPENSE);
       navigation.navigate(PAGES.CALCULATIONS);
     } else {
       alert(localStrings.addDataWarning);
@@ -142,11 +128,24 @@ export default function Home() {
     );
   };
 
+  const handleOnAdd = expense => {
+    setExpenses(prevState => {
+      return [...prevState, expense];
+    });
+  };
+
+  const renderAddExpenseModal = () => {
+    return (
+      <AddExpenseModal modalizeRef={addExpenseModalRef} onAdd={handleOnAdd} />
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {renderHeader()}
       {renderExpenses()}
       {renderButtons()}
+      {renderAddExpenseModal()}
     </SafeAreaView>
   );
 }

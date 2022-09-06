@@ -8,7 +8,6 @@ import Entypo from 'react-native-vector-icons/Entypo';
 
 import Home from '../../screens/Home';
 import Calculations from '../../screens/Calculations';
-import AddExpense from '../../screens/AddExpense';
 import CalculationDetail from '../../screens/CalculationDetail';
 import {PAGES, ScreenHeight} from '../../shared/constants';
 
@@ -81,7 +80,6 @@ function StackNavigator() {
         name={PAGES.CALCULATIONDETAIL}
         component={CalculationDetail}
       />
-      <Stack.Screen name={PAGES.ADDEXPENSE} component={AddExpense} />
     </Stack.Navigator>
   );
 }
